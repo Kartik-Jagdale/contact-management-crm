@@ -1,70 +1,128 @@
-# Getting Started with Create React App
+﻿
+# Contact Management System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is a **Contact Management System** that allows users to manage contacts, including adding, viewing, editing, and deleting contact details. The application is built using **React** for the frontend, **Node.js/Express** for the backend, and **PostgreSQL** as the database.
 
-## Available Scripts
+## Setup Instructions
 
-In the project directory, you can run:
+### 1. Install Dependencies
 
-### `npm start`
+#### Backend (Node.js/Express)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- First, clone the repository:
+  ```bash
+  git clone https://github.com/yourusername/contact-management.git
+  cd contact-management/contactmanbackend
+  ```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Install backend dependencies:
+  ```bash
+  npm install
+  ```
 
-### `npm test`
+#### Frontend (React)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Navigate to the frontend directory:
+  ```bash
+  cd contact-management/contactmanfrontend
+  ```
 
-### `npm run build`
+- Install frontend dependencies:
+  ```bash
+  npm install
+  ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 2. Start the Backend
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- Ensure PostgreSQL is running on your machine.
+- Set up your PostgreSQL database and configure the connection in the `server.js` file (see below for the database schema).
+- Start the backend server:
+  ```bash
+  cd contactmanbackend
+  npm start
+  ```
+  The backend will run on `http://localhost:5000`.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 3. Start the Frontend
 
-### `npm run eject`
+- In a new terminal window, navigate to the frontend directory:
+  ```bash
+  cd contactmanfrontend
+  npm start
+  ```
+  The frontend will run on `http://localhost:3000`.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 4. Database Schema Setup
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+To set up the PostgreSQL database, create a database (e.g., `contacts`) and run the following SQL script:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```sql
+-- Create the contacts table
+CREATE TABLE contacts (
+  id SERIAL PRIMARY KEY,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  email VARCHAR(100) UNIQUE NOT NULL,
+  phone_number VARCHAR(15),
+  company VARCHAR(100),
+  job_title VARCHAR(100)
+);
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 5. Database Configuration
 
-## Learn More
+Make sure your database configuration in `server.js` is correct. Update the database connection parameters as per your setup.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```javascript
+const pool = new Pool({
+  user: 'postgres', // Your PostgreSQL user
+  host: 'localhost',
+  database: 'contacts', // Database name
+  password: 'yourpassword', // Your password
+  port: 5432,
+});
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Overview of Project Functionality
 
-### Code Splitting
+This project allows you to:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+1. **Add a Contact**: A user can fill out a form with contact details (first name, last name, email, phone number, company, job title). When submitted, the contact is added to the PostgreSQL database.
+   
+2. **View Contacts**: All contacts are displayed in a table with details such as name, email, phone number, company, and job title.
 
-### Analyzing the Bundle Size
+3. **Edit a Contact**: A user can click the "Edit" button next to a contact, which will populate the form with the contact's existing details. After editing the details, the user can save the updated contact back to the database.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+4. **Delete a Contact**: A user can delete a contact from the system. This will remove the contact from the PostgreSQL database.
 
-### Making a Progressive Web App
+## Challenges Faced and Solutions Implemented
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### 1. **Handling Null Values in Database**
+   - Issue: Sometimes, data from the frontend was not being correctly inserted into the database, resulting in `null` values for required fields like email.
+   - Solution: Ensured that the frontend always sends the form data correctly and that the backend validates the input to prevent null values in required fields like email.
 
-### Advanced Configuration
+### 2. **Duplicate Email Error**
+   - Issue: When adding a new contact, a user might attempt to add a contact with an already existing email.
+   - Solution: Added a check in the backend (`server.js`) to check if the email already exists before inserting a new contact. If the email already exists, a `400` error is returned with a message indicating that the email already exists.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+   ```javascript
+   const checkEmail = await pool.query('SELECT * FROM contacts WHERE email = $1', [email]);
+   if (checkEmail.rows.length > 0) {
+     return res.status(400).json({ error: 'Email already exists' });
+   }
+   ```
 
-### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### 3. **Database Connection Issues**
+   - Issue: There were issues with database connection in development, especially when PostgreSQL was not running.
+   - Solution: Ensured that PostgreSQL was always running before trying to start the backend server, and implemented error handling to catch database connection issues.
 
-### `npm run build` fails to minify
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## License
+
+This project is licensed under the MIT License.
+
+
+
+
